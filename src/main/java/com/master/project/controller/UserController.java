@@ -9,11 +9,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
-@RequestMapping("api/v1/")
+@RequestMapping("/api/v1/user")
 public class UserController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
@@ -27,10 +29,16 @@ public class UserController {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<User> registerUser(@RequestBody User user) {
+        User savedUser = userService.addUser(user);
+        return ResponseEntity.ok(savedUser);
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody User user) {
 
-        if (user.getUserID() == null || user.getPassword() == null) {
+        if (user.getEmail() == null || user.getPassword() == null) {
             return ResponseEntity.badRequest().body("Username and Password are required");
         }
 
@@ -38,10 +46,10 @@ public class UserController {
             User userDetails = userService.loginUser(user);
 
             if (userDetails != null) {
-                String jwtToken = jwtTokenProvider.generateToken(String.valueOf(userDetails.getUserID()));
+                String jwtToken = jwtTokenProvider.generateToken(String.valueOf(userDetails.getEmail()));
                 JwtResponse jwtResponse = new JwtResponse(jwtToken);
 
-                LOGGER.info("Jwt response generated for userID: " + userDetails.getUserID());
+                LOGGER.info("Jwt response generated for user : " + userDetails.getEmail());
                 return ResponseEntity.ok(jwtResponse);
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
@@ -49,6 +57,29 @@ public class UserController {
         } catch (Exception e) {
             LOGGER.error("Error during login: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing your request");
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User userDetails) {
+        User updatedUser = userService.updateUser(id, userDetails);
+
+        if (updatedUser != null) {
+            return ResponseEntity.ok(updatedUser);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @Transactional
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
+        boolean isDeleted = userService.deleteUser(id);
+
+        if (isDeleted) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
 }
