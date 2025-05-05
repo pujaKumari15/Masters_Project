@@ -33,6 +33,18 @@ public class UserService {
         return userDao.save(user);
     }
 
+    public User getUserById(String id) {
+        Optional<User> userOpt = userDao.findById(id);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            user.setPassword(null);
+            user.setCreatedDate(null);
+            user.setUpdatedDate(null);
+            return user;
+        }
+        return null;
+    }
+
     public User updateUser(String id, User userDetails) {
         Optional<User> existingUserOpt = userDao.findById(id);
 

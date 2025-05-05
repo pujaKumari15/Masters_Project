@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/v1/user")
 public class UserController {
 
@@ -47,7 +46,7 @@ public class UserController {
 
             if (userDetails != null) {
                 String jwtToken = jwtTokenProvider.generateToken(String.valueOf(userDetails.getEmail()));
-                JwtResponse jwtResponse = new JwtResponse(jwtToken);
+                JwtResponse jwtResponse = new JwtResponse(jwtToken, userDetails.getId());
 
                 LOGGER.info("Jwt response generated for user : " + userDetails.getEmail());
                 return ResponseEntity.ok(jwtResponse);
@@ -57,6 +56,17 @@ public class UserController {
         } catch (Exception e) {
             LOGGER.error("Error during login: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing your request");
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUser(@PathVariable String id) {
+        User user = userService.getUserById(id);
+
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
 
