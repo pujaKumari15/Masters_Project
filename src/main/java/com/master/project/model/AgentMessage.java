@@ -12,6 +12,8 @@ public class AgentMessage {
     private String userId;
     private String sessionId;
     private String message;
+    private String actions;
+    private String suggestions;
     private Timestamp timestamp;
 
     // Getters and setters
@@ -23,6 +25,22 @@ public class AgentMessage {
 
     public String getUserId() {
         return userId;
+    }
+    
+    public String getActions() {
+        return actions;
+    }
+
+    public String getSuggestions() {
+        return suggestions;
+    }
+
+    public void setActions(String actions) {
+        this.actions = actions;
+    }
+
+    public void setSuggestions(String suggestions) {
+        this.suggestions = suggestions;
     }
 
     public String getSessionId() {

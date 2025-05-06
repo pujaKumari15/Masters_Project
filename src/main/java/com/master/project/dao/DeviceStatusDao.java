@@ -1,6 +1,5 @@
 package com.master.project.dao;
 
-import com.master.project.model.Device;
 import com.master.project.model.DeviceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;

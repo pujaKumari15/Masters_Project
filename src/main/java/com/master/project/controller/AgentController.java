@@ -3,15 +3,20 @@ import com.master.project.model.AgentMessage;
 import com.master.project.model.AgentSession;
 import com.master.project.service.AgentMessageService;
 import com.master.project.service.AgentSessionService;
+
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.Timestamp;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/v1/agent")
 public class AgentController {
+    
     @Autowired
     private AgentSessionService agentSessionService;
 
@@ -56,11 +61,11 @@ public class AgentController {
     }
 
     // Create an AgentMessage record
-    @PostMapping("/messages")
-    public ResponseEntity<AgentMessage> createAgentMessage(@RequestBody AgentMessage agentMessage) {
-        AgentMessage createdMessage = agentMessageService.createAgentMessage(agentMessage);
-        return ResponseEntity.ok(createdMessage);
-    }
+    // @PostMapping("/messages")
+    // public ResponseEntity<AgentMessage> createAgentMessage(@RequestBody AgentMessage agentMessage) {
+    //     AgentMessage createdMessage = agentMessageService.createAgentMessage(agentMessage);
+    //     return ResponseEntity.ok(createdMessage);
+    // }
 
     // List AgentMessages by session_id, sorted by timestamp
     @GetMapping("/messages/session/{sessionId}")
@@ -70,5 +75,15 @@ public class AgentController {
             return ResponseEntity.ok(messages);
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // Invoke the agent with a message
+    @PostMapping("/invoke")
+    public CompletableFuture<AgentMessage> invokeAgent(@RequestBody AgentMessage agentMessage) {
+        if (agentMessage.getSessionId() == null || agentMessage.getSessionId().isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        agentMessageService.createAgentMessage(agentMessage);
+        return agentMessageService.invokeAgent(agentMessage.getMessage(), agentMessage.getSessionId());
     }
 }
