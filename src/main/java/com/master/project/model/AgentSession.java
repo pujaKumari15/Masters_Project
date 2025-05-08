@@ -18,6 +18,7 @@ public class AgentSession {
     @Id
     private String id;
     private String userId;
+    private String name;
     private Timestamp updatedDate;
     private Timestamp createdDate;
 
@@ -27,6 +28,10 @@ public class AgentSession {
 
     public String getUserId() {
         return userId;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public Timestamp getUpdatedDate() {
@@ -43,6 +48,10 @@ public class AgentSession {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void setUpdatedDate(Timestamp updatedDate) {

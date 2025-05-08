@@ -14,6 +14,7 @@ public class AgentMessage {
     private String message;
     private String actions;
     private String suggestions;
+    private String query;
     private Timestamp timestamp;
 
     // Getters and setters
@@ -35,20 +36,16 @@ public class AgentMessage {
         return suggestions;
     }
 
-    public void setActions(String actions) {
-        this.actions = actions;
-    }
-
-    public void setSuggestions(String suggestions) {
-        this.suggestions = suggestions;
-    }
-
     public String getSessionId() {
         return sessionId;
     }
 
     public String getMessage() {
         return message;
+    }
+
+    public String getQuery() {
+        return query;
     }
 
     public Timestamp getTimestamp() {
@@ -69,6 +66,18 @@ public class AgentMessage {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public void setActions(String actions) {
+        this.actions = actions;
+    }
+
+    public void setSuggestions(String suggestions) {
+        this.suggestions = suggestions;
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
     }
 
     public void setTimestamp(Timestamp timestamp) {
