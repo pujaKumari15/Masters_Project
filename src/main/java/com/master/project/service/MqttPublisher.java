@@ -34,7 +34,7 @@ public class MqttPublisher {
             String topic = "user/" + device.getOwnerId() + "/device/" + action.name().toLowerCase() + "/" + device.getId();
             publish(topic, message);
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            log.error("Failed to convert Device object to JSON string", e);
+            log.error("MQTT Failed to convert Device object to JSON string", e);
             throw new MqttException(e);
         }
     }

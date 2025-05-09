@@ -53,7 +53,7 @@ public class DeviceService {
     }
 
     // Update a device
-    public Device updateDevice(String id, Device deviceDetails, MqttCaller caller) {
+    public Device updateDevice(String id, Device deviceDetails) {
         Optional<Device> deviceOptional = deviceDao.findById(id);
 
         if (deviceOptional.isPresent()) {
@@ -73,11 +73,22 @@ public class DeviceService {
 
             deviceStatusService.addDeviceHistory(updatedDevice.getId(), "UPDATE", updatedDevice.getCurrentStatus());
 
-            try {
-                mqttPublisher.publish(MqttAction.UPDATE, updatedDevice, caller);
-            } catch (MqttException e) {
-                e.printStackTrace();
-            }
+            return updatedDevice;
+        }
+        return null;
+    }
+
+    // Update the status of a device
+    public Device updateDeviceStatus(String id, String status) {
+        Optional<Device> deviceOptional = deviceDao.findById(id);
+
+        if (deviceOptional.isPresent()) {
+            Device device = deviceOptional.get();
+            device.setCurrentStatus(status);
+            device.setUpdatedDate(new Timestamp(System.currentTimeMillis()));
+            Device updatedDevice = deviceDao.save(device);
+
+            deviceStatusService.addDeviceHistory(updatedDevice.getId(), "UPDATE", updatedDevice.getCurrentStatus());
 
             return updatedDevice;
         }

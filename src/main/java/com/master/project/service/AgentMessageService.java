@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master.project.dao.AgentMessageDao;
 import com.master.project.dto.AgentMessageDto;
+import com.master.project.enums.MqttAction;
 import com.master.project.enums.MqttCaller;
 import com.master.project.model.AgentMessage;
 import com.master.project.model.Device;
 
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +45,9 @@ public class AgentMessageService {
 
     @Autowired
     private AgentMessageDao agentMessageDao;
+
+    @Autowired
+    private MqttPublisher mqttPublisher;
 
     @Autowired
     private BedrockAgentRuntimeAsyncClient bedrockClient;
@@ -143,7 +148,12 @@ public class AgentMessageService {
                                         String statusJson = statusNode.toString();
                                         log.info("Updating device status: {}", statusJson);
                                         existingDevice.setCurrentStatus(statusJson);
-                                        deviceService.updateDevice(deviceId, existingDevice, MqttCaller.AGENT);
+                                        deviceService.updateDevice(deviceId, existingDevice);
+                                        try {
+                                            mqttPublisher.publish(MqttAction.UPDATE, existingDevice, MqttCaller.AGENT);
+                                        } catch (MqttException e) {
+                                            log.error("Failed to publish MQTT message: {}", e.getMessage());
+                                        }
                                     } else {
                                         log.warn("Device with ID {} not found", deviceId);
                                     }
