@@ -1,7 +1,11 @@
 package com.master.project.service;
 
 import com.master.project.dao.DeviceDao;
+import com.master.project.enums.MqttAction;
+import com.master.project.enums.MqttCaller;
 import com.master.project.model.Device;
+
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +24,9 @@ public class DeviceService {
     @Autowired
     private DeviceStatusService deviceStatusService;
 
+    @Autowired
+    private MqttPublisher mqttPublisher;
+
     // Create a new device
     public Device createDevice(Device device) {
 
@@ -31,6 +38,12 @@ public class DeviceService {
 
         deviceStatusService.addDeviceHistory(createdDevice.getId(), "CREATE", createdDevice.getCurrentStatus());
 
+        try {
+            mqttPublisher.publish(MqttAction.CREATE, createdDevice, MqttCaller.USER);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+
         return createdDevice;
     }
 
@@ -40,7 +53,7 @@ public class DeviceService {
     }
 
     // Update a device
-    public Device updateDevice(String id, Device deviceDetails) {
+    public Device updateDevice(String id, Device deviceDetails, MqttCaller caller) {
         Optional<Device> deviceOptional = deviceDao.findById(id);
 
         if (deviceOptional.isPresent()) {
@@ -59,6 +72,12 @@ public class DeviceService {
             Device updatedDevice = deviceDao.save(device);
 
             deviceStatusService.addDeviceHistory(updatedDevice.getId(), "UPDATE", updatedDevice.getCurrentStatus());
+
+            try {
+                mqttPublisher.publish(MqttAction.UPDATE, updatedDevice, caller);
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
 
             return updatedDevice;
         }

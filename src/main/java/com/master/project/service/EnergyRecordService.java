@@ -15,7 +15,7 @@ public class EnergyRecordService {
 
     // Method to get energy records filtered by user_id and date range
     public List<EnergyRecord> getEnergyRecordsByUserIdAndDateRange(String userId, Timestamp startDate, Timestamp endDate) {
-        return energyRecordRepository.findByUserIdAndDateRange(userId, startDate, endDate);
+        return energyRecordRepository.findByUserIdAndTimestampBetweenOrderByTimestampAsc(userId, startDate, endDate);
     }
 }
 

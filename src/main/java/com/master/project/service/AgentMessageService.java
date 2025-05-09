@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master.project.dao.AgentMessageDao;
 import com.master.project.dto.AgentMessageDto;
+import com.master.project.enums.MqttCaller;
 import com.master.project.model.AgentMessage;
 import com.master.project.model.Device;
 
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentRequest;
@@ -22,6 +24,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,11 +33,13 @@ public class AgentMessageService {
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(AgentMessageService.class);
 
-    @Autowired
-    private DeviceService deviceService;
+    @Value("${aws.bedrock.agentid}")
+    private String agentId;
+    @Value("${aws.bedrock.agentaliasid}")
+    private String agentAliasId;
 
     @Autowired
-    private DeviceStatusService deviceStatusService;
+    private DeviceService deviceService;
 
     @Autowired
     private AgentMessageDao agentMessageDao;
@@ -56,9 +62,6 @@ public class AgentMessageService {
 
     public CompletableFuture<AgentMessage> invokeAgent(String inputText, String sessionId, String userId) {
         CompletableFuture<AgentMessage> futureResponse = new CompletableFuture<>();
-
-        String agentId      = "";
-        String agentAliasId = "";
 
         String prompt = "<user_id>" + userId + "</user_id> " + inputText;
 
@@ -96,6 +99,19 @@ public class AgentMessageService {
                             .replace("\r", " ");
                         log.info("Final raw response: {}", json);
 
+                        // Escape inner quotes inside the query string if present
+                        Pattern pattern = Pattern.compile("\"query\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+                        Matcher matcher = pattern.matcher(json);
+                        StringBuffer sb = new StringBuffer();
+
+                        while (matcher.find()) {
+                            String originalQuery = matcher.group(1);
+                            String escapedQuery = originalQuery.replace("\"", "\\\\\"");
+                            matcher.appendReplacement(sb, "\"query\":\"" + escapedQuery + "\"");
+                        }
+                        matcher.appendTail(sb);
+                        json = sb.toString();
+
                         ObjectMapper mapper = new ObjectMapper();
                         mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
 
@@ -117,6 +133,7 @@ public class AgentMessageService {
                             for (JsonNode action : actionsNode) {
                                 String actionType = action.path("action").asText();
                                 log.info("Action type: {}", actionType);
+
                                 if (actionType.equals("device_update")) {
                                     String deviceId = action.path("id").asText();
                                     JsonNode statusNode = action.path("status");
@@ -126,11 +143,12 @@ public class AgentMessageService {
                                         String statusJson = statusNode.toString();
                                         log.info("Updating device status: {}", statusJson);
                                         existingDevice.setCurrentStatus(statusJson);
-                                        deviceService.updateDevice(deviceId, existingDevice);
+                                        deviceService.updateDevice(deviceId, existingDevice, MqttCaller.AGENT);
                                     } else {
                                         log.warn("Device with ID {} not found", deviceId);
                                     }
                                 }
+
                             }
                         }
 

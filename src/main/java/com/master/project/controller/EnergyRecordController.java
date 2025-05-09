@@ -29,10 +29,7 @@ public class EnergyRecordController {
         // Get the filtered energy records
         List<EnergyRecord> energyRecords = energyRecordService.getEnergyRecordsByUserIdAndDateRange(userId, startTimestamp, endTimestamp);
 
-        if (!energyRecords.isEmpty()) {
-            return ResponseEntity.ok(energyRecords);  // Return filtered records
-        }
-        return ResponseEntity.notFound().build();  // Return 404 if no records found
+        return ResponseEntity.ok(energyRecords);  // Return filtered records
     }
 }
 

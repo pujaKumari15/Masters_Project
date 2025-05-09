@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master.project.dto.DeviceStatusDto;
+import com.master.project.enums.MqttCaller;
 import com.master.project.model.Device;
 import com.master.project.model.DeviceStatus;
 import com.master.project.service.DeviceService;
@@ -61,7 +62,7 @@ public class DeviceController {
     // Update a device
     @PutMapping("/{deviceId}")
     public ResponseEntity<Device> updateDevice(@PathVariable String deviceId, @RequestBody Device deviceDetails) {
-        Device updatedDevice = deviceService.updateDevice(deviceId, deviceDetails);
+        Device updatedDevice = deviceService.updateDevice(deviceId, deviceDetails, MqttCaller.USER);
         if (updatedDevice != null) {
             return ResponseEntity.ok(updatedDevice);
         }
@@ -99,7 +100,7 @@ public class DeviceController {
         log.info("updateDeviceStatus JSON String: {}", jsonString);
         existingDevice.setCurrentStatus(jsonString);
 
-        Device updatedDevice = deviceService.updateDevice(deviceId, existingDevice);
+        Device updatedDevice = deviceService.updateDevice(deviceId, existingDevice, MqttCaller.USER);
 
         if (updatedDevice != null) {
             return ResponseEntity.ok(updatedDevice);
