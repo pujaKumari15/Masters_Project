@@ -4,11 +4,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master.project.dto.DeviceStatusDto;
+import com.master.project.enums.MqttAction;
 import com.master.project.enums.MqttCaller;
 import com.master.project.model.Device;
 import com.master.project.model.DeviceStatus;
 import com.master.project.service.DeviceService;
 import com.master.project.service.DeviceStatusService;
+import com.master.project.service.MqttPublisher;
+
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +30,9 @@ public class DeviceController {
 
     @Autowired
     private DeviceStatusService deviceStatusService;
+
+    @Autowired
+    private MqttPublisher mqttPublisher;
 
     // Create a new device
     @PostMapping("/")
@@ -62,8 +69,14 @@ public class DeviceController {
     // Update a device
     @PutMapping("/{deviceId}")
     public ResponseEntity<Device> updateDevice(@PathVariable String deviceId, @RequestBody Device deviceDetails) {
-        Device updatedDevice = deviceService.updateDevice(deviceId, deviceDetails, MqttCaller.USER);
+        Device updatedDevice = deviceService.updateDevice(deviceId, deviceDetails);
+
         if (updatedDevice != null) {
+            try {
+                mqttPublisher.publish(MqttAction.UPDATE, updatedDevice, MqttCaller.USER);
+            } catch (MqttException e) {
+                log.error("Failed to publish MQTT message: {}", e.getMessage());
+            }
             return ResponseEntity.ok(updatedDevice);
         }
         return ResponseEntity.notFound().build();  // Device not found
@@ -100,9 +113,14 @@ public class DeviceController {
         log.info("updateDeviceStatus JSON String: {}", jsonString);
         existingDevice.setCurrentStatus(jsonString);
 
-        Device updatedDevice = deviceService.updateDevice(deviceId, existingDevice, MqttCaller.USER);
+        Device updatedDevice = deviceService.updateDevice(deviceId, existingDevice);
 
         if (updatedDevice != null) {
+            try {
+                mqttPublisher.publish(MqttAction.UPDATE, updatedDevice, MqttCaller.USER);
+            } catch (MqttException e) {
+                log.error("Failed to publish MQTT message: {}", e.getMessage());
+            }
             return ResponseEntity.ok(updatedDevice);
         }
         return ResponseEntity.status(500).build();

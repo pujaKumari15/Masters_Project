@@ -1,5 +1,7 @@
 package com.master.project.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master.project.dao.DeviceDao;
 import com.master.project.enums.MqttAction;
 import com.master.project.enums.MqttCaller;
@@ -12,11 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class DeviceService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DeviceService.class);
 
     @Autowired
     private DeviceDao deviceDao;
@@ -91,6 +95,43 @@ public class DeviceService {
             deviceStatusService.addDeviceHistory(updatedDevice.getId(), "UPDATE", updatedDevice.getCurrentStatus());
 
             return updatedDevice;
+        }
+        return null;
+    }
+
+    // Update the status of a device by attribute
+    public Device updateDeviceStatus(String id, String attribute, Object value) {
+        Optional<Device> deviceOptional = deviceDao.findById(id);
+
+        if (deviceOptional.isPresent()) {
+            Device device = deviceOptional.get();
+            String currentStatus = device.getCurrentStatus(); // e.g. {"power":false,"brightness":0.5}
+
+                log.info("Updated status 1: {}", currentStatus);
+            // Update the attribute in the currentStatus JSON e.g. attribute = "power", value = true
+            // Assuming currentStatus is a JSON string, parse it to a Map
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> statusMap = null;
+            try {
+                statusMap = objectMapper.readValue(currentStatus, new TypeReference<Map<String, Object>>() {});
+                // Update the attribute in the statusMap
+                statusMap.put(attribute, value);
+
+                // Convert the updated statusMap back to a JSON string
+                String updatedStatus = objectMapper.writeValueAsString(statusMap);
+                device.setCurrentStatus(updatedStatus);
+                device.setUpdatedDate(new Timestamp(System.currentTimeMillis()));
+                Device updatedDevice = deviceDao.save(device);
+
+                log.info("Updated status 2: {}", updatedStatus);
+
+                deviceStatusService.addDeviceHistory(updatedDevice.getId(), "UPDATE", updatedDevice.getCurrentStatus());
+
+                return updatedDevice;
+            } catch (Exception e) {
+                log.error("Failed to update device status: {}", e.getMessage());
+                return null;
+            }
         }
         return null;
     }

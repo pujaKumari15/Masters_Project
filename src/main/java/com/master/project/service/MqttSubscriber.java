@@ -1,14 +1,20 @@
 package com.master.project.service;
 
+import java.util.List;
+
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.master.project.dao.AutomationActionDto;
 import com.master.project.dto.MqttMessageDto;
+import com.master.project.enums.MqttAction;
 import com.master.project.enums.MqttCaller;
+import com.master.project.model.Automation;
 import com.master.project.model.Device;
 
 @Service
@@ -19,6 +25,14 @@ public class MqttSubscriber {
 
     @Autowired
     private DeviceService deviceService;
+
+    @Autowired
+    @Lazy
+    private AutomationService automationService;
+
+    @Autowired
+    @Lazy
+    private MqttPublisher mqttPublisher;
 
     @Autowired
     public MqttSubscriber(MqttClient mqttClient) {
@@ -43,6 +57,24 @@ public class MqttSubscriber {
                         // DeviceStatusDto.class);
 
                         deviceService.updateDeviceStatus(mqttDevice.getId(), mqttDevice.getCurrentStatus());
+
+                        List<Automation> existingAutomation = automationService.getAutomationsByDeviceId(mqttDevice.getId());
+                        for (Automation automation : existingAutomation) {
+                            if (automation.getEnable() == false) continue;
+                            Device triggerDevice = mqttDevice;
+                            Boolean isTriggering = automationService.checkAutomationCondition(automation, triggerDevice);
+                            if (isTriggering) {
+                                AutomationActionDto automationAction = automation.getActionObject();
+                                log.info("Automation triggered for device: {}", triggerDevice.getId());
+                                Device device = deviceService.getDeviceById(automationAction.getDeviceId())
+                                        .orElseThrow(() -> new RuntimeException("Device not found with id: " + automationAction.getDeviceId()));
+                                Device updatedDevice = deviceService.updateDeviceStatus(
+                                    device.getId(),
+                                    automationAction.getAttribute(),
+                                    automationAction.getValue());
+                                mqttPublisher.publish(MqttAction.UPDATE, updatedDevice, MqttCaller.AUTOMATION);
+                            }
+                        }
                     }
                 } catch (Exception e) {
                     log.error("Failed to parse MQTT message: {}", e.getMessage());

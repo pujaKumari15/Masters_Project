@@ -3,6 +3,11 @@ package com.master.project.model;
 import jakarta.persistence.*;
 import java.sql.Timestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.master.project.dao.AutomationActionDto;
+import com.master.project.dto.AutomationTriggerDto;
+import com.master.project.enums.AutomationType;
+
 @Entity
 @Table(name = "automation")
 public class Automation {
@@ -17,7 +22,8 @@ public class Automation {
 
     private Boolean enable;
 
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private AutomationType type;
 
     private String triggers;
 
@@ -66,16 +72,21 @@ public class Automation {
         this.enable = enable;
     }
 
-    public String getType() {
+    public AutomationType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(AutomationType type) {
         this.type = type;
     }
 
     public String getTrigger() {
         return triggers;
+    }
+
+    @JsonIgnore
+    public AutomationTriggerDto getTriggerObject() {
+        return AutomationTriggerDto.fromJson(triggers);
     }
 
     public void setTrigger(String triggers) {
@@ -92,6 +103,11 @@ public class Automation {
 
     public String getAction() {
         return action;
+    }
+
+    @JsonIgnore
+    public AutomationActionDto getActionObject() {
+        return AutomationActionDto.fromJson(action);
     }
 
     public void setAction(String action) {

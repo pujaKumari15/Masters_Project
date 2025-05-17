@@ -27,10 +27,7 @@ public class AutomationController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Automation>> getAutomationsByUserId(@PathVariable String userId) {
         List<Automation> automations = automationService.getAutomationsByUserId(userId);
-        if (!automations.isEmpty()) {
-            return ResponseEntity.ok(automations);
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(automations);
     }
 
     // Get automation by id
